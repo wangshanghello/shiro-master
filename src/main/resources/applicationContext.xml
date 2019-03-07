@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jee="http://www.springframework.org/schema/jee" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation=" http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.0.xsd  
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd  
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd  
+        http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd  
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+	<!-- 自动扫描 -->
+	<context:component-scan base-package="com.ssm.shiro.serivce" />
+
+	<!--配置数据源 -->
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<property name="url" value="jdbc:mysql://localhost:3306/shiro" />
+		<property name="username" value="root" />
+		<property name="password" value="root" />
+	</bean>
+
+	<!--配置mybatis的sqlSessionFactory -->
+	<bean name="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 自动扫描mappers.xml文件 -->
+		<property name="mapperLocations"
+			value="classpath:mybatis/*.xml " />
+		<!--mybatis配置文件 -->
+		<property name="configLocation" value="classpath:mybatis-config.xml" />
+	</bean>
+
+	<!--DAO接口所在包名，spring 会自动查找其下的 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.ssm.shiro.dao" />
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+	</bean>
+
+	<!--自定义Realm -->
+	<bean id="myRealm" class="com.ssm.shiro.realm.MyRealm" />
+
+	<!--安全管理 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="myRealm"></property>
+	</bean>
+
+	<!--shiro 过滤器 -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<!-- Shiro过滤器的核心安全接口，这个属性是必须的 -->
+		<property name="securityManager" ref="securityManager" />
+		<!--身份认证失败，则跳转到登录页面的配置 -->
+		<property name="loginUrl" value="/login.jsp" />
+		<!--权限认证失败，则跳转到指定页面 -->
+		<property name="unauthorizedUrl" value="/unauthorized.jsp" />
+		<!-- Shiro连接约束配置，即过滤链的定义 -->
+	    <!--  
+        	配置哪些页面需要受保护. 
+        	以及访问这些页面需要的权限. 
+        	1). anon 可以被匿名访问
+        	2). authc 必须认证(即登录)后才可能访问的页面. 
+        	3). logout 登出.
+        	4). roles 角色过滤器
+        -->
+		<property name="filterChainDefinitions">
+			<value>
+				/login.jsp = anon
+				/user/login=anon
+				/user/logout = logout
+				/admin.jsp=roles[admin]
+				/** = authc
+			</value>
+		</property>
+	</bean>
+</beans>
